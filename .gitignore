@@ -1,2 +1,5 @@
 **/out*
 .spyproject/*
+**/__pycache__/*
+**/devel
+
