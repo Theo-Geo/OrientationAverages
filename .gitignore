@@ -2,4 +2,6 @@
 .spyproject/*
 **/__pycache__/*
 **/devel
-
+/dist
+/build
+**/*.egg-info

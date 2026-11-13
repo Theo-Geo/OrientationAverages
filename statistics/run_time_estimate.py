@@ -5,8 +5,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 import time
 
-import sys; sys.path.append("/home/theoh/Code/")
-from symmetry_average import (quaternions_to_rotation_matrix, 
+import sys; sys.path.append("../../")
+from orientation_averages import (quaternions_to_rotation_matrix, 
                               objective_fct_rotation, 
                               markley_average, symmetrize_wrt_ref,
                               symmetry_average, symmetry_average_approx, 
