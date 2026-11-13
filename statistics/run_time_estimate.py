@@ -5,9 +5,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 import time
 
-import sys; sys.path.append("../../")
+import sys; sys.path.append("../app/")
 from orientation_averages import (quaternions_to_rotation_matrix, 
-                              objective_fct_rotation, 
+                              objective_fct_rotation, quat_geodesic,
                               markley_average, symmetrize_wrt_ref,
                               symmetry_average, symmetry_average_approx, 
                               bingham_average, objective_fct)
@@ -47,7 +47,7 @@ for i0, id_ in enumerate(ids):
     
     # reduce number of points if wanted
     
-    mask = vf > np.percentile(vf,97)
+    mask = vf > np.percentile(vf,99)
     quat_array = quat_array[mask]
     vf = np.ones_like(vf[mask])
     
@@ -71,18 +71,20 @@ for i0, id_ in enumerate(ids):
 
 #%%
 
-fig, (ax,ax_hist) = plt.subplots(2,1, dpi=200, sharex=True)
+n_grains = np.sum(mask)
+
+fig, (ax,ax_hist) = plt.subplots(2,1, dpi=400, sharex=True)
 for i in range(len(run_times.T)):
-    ax.scatter(objectives[:,i], run_times[:,i], label=names[i], c=colors[i], s=5)
-    ax_hist.hist(objectives[:,i], label=names[i], bins=25, range=(0,2.5),
+    ax.scatter(objectives[:,i], run_times[:,i]*1000, label=names[i], c=colors[i], s=5)
+    ax_hist.hist(objectives[:,i], label=names[i], bins=30, range=(0,3),
                  color=colors[i], histtype="step")
     ax_hist.axvline(np.mean(objectives[:,i]), ls="--", color=colors[i])
-    #ax_hist.axvspan(np.std(objectives[:,i]))
     
-    
-ax.set(yscale="log", xlim=(0,2.5))
+ax.set(yscale="log", xlim=(0,np.pi), title=fr"$N_{{grains}}$ = {n_grains}, $N_{{samples}}$ = {len(ids)}", 
+       ylabel="run time (ms)")
+ax_hist.set(xlabel="objective function (rad)", ylabel="count")
 ax.legend(frameon=False)
-
+fig.savefig(f"../plots/run_time_vs_obj_{n_grains}_{len(ids)}.png")
 
 
 

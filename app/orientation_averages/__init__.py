@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from .src.quaternion_utils import (
     quaternions_to_rotation_matrix, rotation_matrix_to_quaternion, 
-    symmetrize_wrt_ref, wrapper_of)
+    symmetrize_wrt_ref, wrapper_of, quat_geodesic)
 
 from .src.averages import (
     markley_average, 

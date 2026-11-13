@@ -9,10 +9,18 @@ This package is the python version of the interpolator used in the publication:
 
 The folder statistics contains tests for runtime and accuracy.
 
+## TODOS
+
+- [x] runtime vs. accuracy analysis
+- [ ] improve effiency -> don't resymmetrize if not necessary 
+- [ ] write unit tests
+- [ ] check maximum geodesic for orthorhombic group 
+- [ ] use frobenius norm as metric instead of geodesic?  
+
 ## Installation 
 
 In the future this package will be available on PyPi. 
-as of now it can be installed locally by executing:
+As of now it can be installed locally by executing:
 
 ```bash 
 python setup.py bdist_wheel sdist

@@ -19,32 +19,28 @@ def quat_geodesic(quat, quat_ref, deg=False):
 def symmetrize_wrt_ref(quat, quat_ref, sym_group="orthorhombic"): 
     
     # all equivalent representations of one crystal orientation
-    
+    possible_mutations = np.empty((4,4), dtype=float)
     if sym_group == "orthorhombic":
-        geodesic_0 = quat_geodesic(quat, quat_ref)
-        if geodesic_0 < np.pi/2: return quat
-        
-        possible_mutations = np.empty((3,4), dtype=float)
         # q*g_i where gi = {identity, +/-i, +/-j, +/-k }
         # skip identity element
-        possible_mutations[0] = np.array([-quat[1], quat[0], quat[3],-quat[2]])
-        possible_mutations[1] = np.array([-quat[2],-quat[3], quat[0], quat[1]])
-        possible_mutations[2] = np.array([-quat[3], quat[2],-quat[1], quat[0]])
-        
-        for qg in possible_mutations:
-            geodesic = quat_geodesic(qg, quat_ref)
-            if geodesic < np.pi/2: return qg
-        assert False, "no optimal quat found?"
-        
+        possible_mutations[0] = np.copy(quat)
+        possible_mutations[1] = np.array([-quat[1], quat[0], quat[3],-quat[2]])
+        possible_mutations[2] = np.array([-quat[2],-quat[3], quat[0], quat[1]])
+        possible_mutations[3] = np.array([-quat[3], quat[2],-quat[1], quat[0]])
+            
     elif sym_group =="triclinic": 
         return quat    
-    else: assert False, ValueError(sym_group," is not a valid symmetry group")
-    
-    
-    
-    #closest_quat = possible_mutations[np.argmin(geodesics)]
-    #if closest_quat[0] < 0: closest_quat *= -1
-    
+    else: raise NotImplementedError(sym_group," is not a valid symmetry group")
+
+    i0:int = 0
+    geodesic_0 = np.pi
+    for i, qg in enumerate(possible_mutations):
+        geodesic = quat_geodesic(qg, quat_ref)
+        if geodesic < geodesic_0: 
+            geodesic_0 = geodesic
+            i0 = i
+            
+    return possible_mutations[i0]
     
 
 @njit
