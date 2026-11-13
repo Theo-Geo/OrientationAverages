@@ -75,7 +75,7 @@ F(\bar{\mathbf{q}}, \{\mathbf{g}_i\}) = \frac{1}{\sum_j w_j}\sum_i w_i[\ 2\arcco
 ```
 where $\cdot$ is the dot product for vectors in $\mathbb{R}^4$. This is a slight generalization, as $w_i$ are weights associated with each rotation (quaternion). In the future, a distance weighting could be implemented based on these.
 
-Quaternions are also convenient as there exists a well defined average. {cite}`markley:etal:2007` show that the minimization defined in Equ. {math:numref}`eqn:rotation_average` for the euclidean norm Equ. {math:numref}`eqn:rotation_euclidean_norm` can be reformulated into,
+Quaternions are also convenient as there exists a well defined average. [Markley et. al. 2007](https://arc.aiaa.org/doi/10.2514/1.28949) show that the minimization Problem defined in Equ. {math:numref}`eqn:rotation_average` for the euclidean norm Equ. {math:numref}`eqn:rotation_euclidean_norm` can be reformulated into,
 ```math
     :label: eqn:markley_average_maximization
     \bar{\mathbf{q}} = \underset{\mathbf{q}\in \mathbb{H}}{\rm argmax} \ \mathbf{q}^T\mathbf{K}\mathbf{q}
