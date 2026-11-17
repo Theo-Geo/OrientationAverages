@@ -8,15 +8,17 @@ def wrapper_of(quat_fct, rotation_matrices, *args, **kwargs):
 
 # equivalent to the riemannian metric
 @njit
-def quat_geodesic(quat, quat_ref, deg=False): 
+def quat_geodesic(quat, quat_ref, euclid:bool=False, deg:bool=False): 
    
     # avoid round off errors 
     product = min(np.abs(quat_ref@quat),1)
     
-    return 2*np.arccos(product) if not deg else 2*np.rad2deg(np.arccos(product))
-
+    if euclid: return 2*np.sqrt(2*(1-product**2)) if not deg else np.rad2deg(2*np.sqrt(2*(1-product)**2))
+    else: return 2*np.arccos(product) if not deg else 2*np.rad2deg(np.arccos(product))
+    
 @njit
-def symmetrize_wrt_ref(quat, quat_ref, sym_group="orthorhombic"): 
+def symmetrize_wrt_ref(quat, quat_ref, sym_group:str="orthorhombic", 
+                       euclid:bool=False): 
     
     # all equivalent representations of one crystal orientation
     possible_mutations = np.empty((4,4), dtype=float)
@@ -35,7 +37,7 @@ def symmetrize_wrt_ref(quat, quat_ref, sym_group="orthorhombic"):
     i0:int = 0
     geodesic_0 = np.pi
     for i, qg in enumerate(possible_mutations):
-        geodesic = quat_geodesic(qg, quat_ref)
+        geodesic = quat_geodesic(qg, quat_ref, euclid)
         if geodesic < geodesic_0: 
             geodesic_0 = geodesic
             i0 = i
@@ -80,3 +82,27 @@ def quaternions_to_rotation_matrix(quat):
     rotation_matrix[2,1] = 2*(y*z + x*w);
     
     return rotation_matrix;
+
+@njit
+def axis_angle_to_quaternion(axis, angle):
+    quat = np.empty(4, dtype=float)
+    quat[0] = np.cos(angle/2)
+    axis /= np.sqrt(np.sum(axis**2))
+    quat[1:] = np.sin(angle/2)*axis    
+    return quat
+
+@njit
+def quaternion_to_axis_angle(quat):
+    angle = 2*np.arccos(quat[0])
+    if angle > 1e-12:
+        axis = quat[1:]/np.sin(angle/2)
+        axis /= np.sqrt(np.sum(axis**2))
+    else: 
+        angle = 0.0
+        axis = quat[1:]/np.sqrt(np.sum(quat[1:]**2))
+    return axis, angle
+    
+    
+    
+    
+    

@@ -7,10 +7,11 @@ import time
 
 import sys; sys.path.append("../app/")
 from orientation_averages import (quaternions_to_rotation_matrix, 
-                              objective_fct_rotation, quat_geodesic,
-                              markley_average, symmetrize_wrt_ref,
-                              symmetry_average, symmetry_average_approx, 
-                              bingham_average, objective_fct)
+                                  rotation_matrix_to_quaternion,
+                                  objective_fct_rotation, quat_geodesic,
+                                  markley_average, wrapper_of,
+                                  symmetry_average, symmetry_average_approx, 
+                                  bingham_average, average_geodesic, )
 
 def measure_time(fct, *args, **kwargs): 
     run_time = np.empty(4, dtype=float)
@@ -22,16 +23,15 @@ def measure_time(fct, *args, **kwargs):
         t0 = time.time()
     return out, np.min(run_time)
 
-#%%
+#def euclid_to_riemann(d): return 2*np.arcsin(d/(2*np.sqrt(2)))
+#def riemann_to_euclid(d): return 2*np.sqrt(2)*np.sin(d/2)
 
-rng = np.random.default_rng(seed=42)
+#%% load data 
 
 cpo_data = np.genfromtxt("CPO-DDRX-quaternion.dat", skip_header=1)
 ids = np.unique(np.int64(cpo_data[:,0]))
 
-run_times = np.empty( (len(ids), 4), dtype=float)
-objectives = np.empty((len(ids), 4), dtype=float)
-
+# plotting specifications
 names = ["corrected bingham average",
          "markley average",
          "sym. ave. guess min obj.",
@@ -39,55 +39,112 @@ names = ["corrected bingham average",
 
 colors = ["k", "tab:red", "tab:blue", "tab:green"]
 
-for i0, id_ in enumerate(ids):
-    
-    id_mask = cpo_data[:,0] == id_
-    quat_array = cpo_data[id_mask, 2:]
-    vf = cpo_data[id_mask, 1] #np.random.rand(len(quat_array)) # np.ones(len(quat_array)) #   
-    
-    # reduce number of points if wanted
-    
-    mask = vf > np.percentile(vf,99)
-    quat_array = quat_array[mask]
-    vf = np.ones_like(vf[mask])
-    
-    R_mats = np.array([quaternions_to_rotation_matrix(q) for q in quat_array])
-    
-    # bingham average
-    R_bing, run_times[i0,0] = measure_time(bingham_average, R_mats, vf)
-    objectives[i0,0] = objective_fct_rotation(R_mats, R_bing, vf)
+use_euclid = False
+symmetry_group = "orthorhombic"
+plot_deg = True
+if plot_deg: xlab = "weighted average geodesic (°)"
+else:        xlab = "weighted average geodesic (rad)"
+max_geo = 100 
 
-    # # # quaternion averages # # # 
-    mean_markley, run_times[i0,1] = measure_time(markley_average, quat_array, vf) 
-    _sym_quats = np.array([symmetrize_wrt_ref(q, mean_markley) for q in quat_array])
-    objectives[i0,1] = objective_fct(_sym_quats, mean_markley, vf)
+# run characteristics
+fractions = np.array([0, 25, 50, 75, 85, 90, 95, 97, 99, 99.5])
+plot_fig  = np.array([1,  0,  1,  0,  0,  1,  0,  0,  1,    1])
+
+# 10, 50 (median), 90 percentile 
+run_time_stats = np.empty((len(fractions), 4, 3))
+# 10, 50 (median), 90 percentile 
+ave_geo_stats  = np.empty((len(fractions), 4, 3))
+ 
+N_grains = np.empty_like(fractions, dtype=int)
+
+for j0, p_ in enumerate(fractions):
     
-    (_, objectives[i0,2]), run_times[i0,2] = measure_time(symmetry_average, 
-                                                          quat_array, vf)
+    print(f"progress: {j0/(len(fractions)-1)}% current p: {p_}")
     
-    (_, objectives[i0,3]), run_times[i0,3] = measure_time(symmetry_average_approx, 
-                                            quat_array, vf, guess = "outlier")
+    run_times = np.empty( (len(ids), 4), dtype=float)
+    ave_geo = np.empty((len(ids), 4), dtype=float)
+    
+    for i0, id_ in enumerate(ids):
         
-
-#%%
-
-n_grains = np.sum(mask)
-
-fig, (ax,ax_hist) = plt.subplots(2,1, dpi=400, sharex=True)
-for i in range(len(run_times.T)):
-    ax.scatter(objectives[:,i], run_times[:,i]*1000, label=names[i], c=colors[i], s=5)
-    ax_hist.hist(objectives[:,i], label=names[i], bins=30, range=(0,3),
-                 color=colors[i], histtype="step")
-    ax_hist.axvline(np.mean(objectives[:,i]), ls="--", color=colors[i])
+        id_mask = cpo_data[:,0] == id_
+        quat_array = cpo_data[id_mask, 2:]
+        vf = cpo_data[id_mask, 1] #np.random.rand(len(quat_array)) # np.ones(len(quat_array)) #   
+        
+        # reduce number of points if wanted
+        
+        mask = vf > np.percentile(vf, p_)
+        N_grains[j0] = np.sum(mask)
+        
+        quat_array = quat_array[mask]
+        vf = np.ones_like(vf[mask])
+        
+        R_mats = np.array([quaternions_to_rotation_matrix(q) for q in quat_array])
+        
+        # bingham average
+        R_bing, run_times[i0,0] = measure_time(bingham_average, R_mats, vf)
+        ave_geo[i0,0] = wrapper_of(average_geodesic, R_mats, 
+                                   rotation_matrix_to_quaternion(R_bing), vf, 
+                                   deg=plot_deg)
     
-ax.set(yscale="log", xlim=(0,np.pi), title=fr"$N_{{grains}}$ = {n_grains}, $N_{{samples}}$ = {len(ids)}", 
-       ylabel="run time (ms)")
-ax_hist.set(xlabel="objective function (rad)", ylabel="count")
-ax.legend(frameon=False)
-fig.savefig(f"../plots/run_time_vs_obj_{n_grains}_{len(ids)}.png")
+        # # # quaternion averages # # # 
+        mean, run_times[i0,1] = measure_time(markley_average, quat_array, vf) 
+        ave_geo[i0,1] = average_geodesic(quat_array, mean, vf, deg=plot_deg)
+        
+        mean, run_times[i0,2] = measure_time(symmetry_average, quat_array, vf, 
+                                                              euclid=use_euclid)
+        ave_geo[i0,2] = average_geodesic(quat_array, mean, vf, deg=plot_deg)
+        
+        mean, run_times[i0,3] = measure_time(symmetry_average_approx, quat_array, vf, 
+                                             guess = "outlier", euclid=use_euclid)
+        ave_geo[i0,3] = average_geodesic(quat_array, mean, vf, deg=plot_deg)
+        
+    # possibly plotting
+    if plot_fig[j0]:
+        fig, (ax,ax_hist) = plt.subplots(2,1, dpi=400, sharex=True)
+        for i in range(len(run_times.T)):
+            ax.scatter(ave_geo[:,i], run_times[:,i]*1000, label=names[i], c=colors[i], s=5)
+            ax_hist.hist(ave_geo[:,i], label=names[i], bins=20, range=(0,max_geo),
+                         color=colors[i], histtype="step")
+            ax_hist.axvline(np.mean(ave_geo[:,i]), ls="--", color=colors[i])
+            
+        ax.set(yscale="log", xlim=(0,max_geo), ylabel="run time per sample (ms)",
+               title=fr"$N_{{grains}}$ = {N_grains[j0]}, $N_{{samples}}$ = {len(ids)}")
+        ax_hist.set(xlabel= xlab, ylabel="count")
+        ax.legend(frameon=False)
+        if use_euclid:
+            fig.savefig(f"../plots/run_time_vs_obj_{N_grains[j0]}_{len(ids)}_euclid.png")
+        else: 
+            fig.savefig(f"../plots/run_time_vs_obj_{N_grains[j0]}_{len(ids)}.png")
+        plt.close(fig)
 
+    # meta evaluation
+    for n in range(4): # averaging method
+        for i, q in enumerate([33, 50, 66]):
+            run_time_stats[j0, n, i] = np.percentile(run_times[:,n], q)
+            ave_geo_stats[j0, n, i] = np.percentile(ave_geo[:,n], q)
+    
+#%% final evaluation 
 
+fig, (axt, axgeo) = plt.subplots(2,1, dpi=400, sharex=True, figsize=(5,5))
+for n in range(4): # averaging method
+    axt.plot(N_grains, run_time_stats[:,n,1]*1000, ".-", label=names[n], c=colors[n])
+    axt.fill_between(N_grains, run_time_stats[:,n,0]*1000, 
+                     run_time_stats[:,n,2]*1000, alpha=0.2, color=colors[n])
+    
+    axgeo.plot(N_grains, ave_geo_stats[:,n,1], ".-", label=names[n], c=colors[n])
+    axgeo.fill_between(N_grains, ave_geo_stats[:,n,0], ave_geo_stats[:,n,2], 
+                       alpha=0.2, color=colors[n])
+    
+axt.legend(frameon=False)
 
+axgeo.set(xlabel=r"$N_{grains}$", ylabel=xlab, ylim=(0,50),
+          xlim=(4,1e3), xscale="log")
+axt.set(ylabel="average run time \nper sample (ms)", yscale="log")
+
+if use_euclid:
+    fig.savefig(f"../plots/run_time_scaling_{len(ids)}_euclid.png")
+else: 
+    fig.savefig(f"../plots/run_time_scaling_{len(ids)}.png")
 
 
 

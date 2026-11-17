@@ -9,4 +9,4 @@ from .src.averages import (
     symmetry_average_approx,
     bingham_average)
 
-from .src.qualifiers import objective_fct, objective_fct_rotation
+from .src.qualifiers import objective_fct, objective_fct_rotation, average_geodesic

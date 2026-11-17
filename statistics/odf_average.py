@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Nov 12 12:53:44 2026
+from matplotlib import pyplot as plt
 
-@author: theoh
-"""
-
+def plot_dod(*args, sym_group:str="orthorhombic"):
+    ax = plt.subplot(*args)
+    return 
