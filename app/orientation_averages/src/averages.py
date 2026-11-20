@@ -75,7 +75,7 @@ def symmetry_average(quat_array, weights, max_iterations:int=100,
             q0 = np.copy(q_mean)
             obj_fct = np.copy(new_objective) 
         else: return q0
-        if n==max_iterations-1: 
+        if n==max_iterations-1:
             raise Exception("Maximum number of iterations exceeded " + 
                             f"in symmetry average. n = {n}")
 
@@ -85,12 +85,19 @@ def symmetry_average(quat_array, weights, max_iterations:int=100,
 @njit
 def _minimum_objective_quaternion(quat_array, weights, sym_group="orthorhombic", 
                                   euclid:bool=False):
-    objs = np.zeros(len(quat_array))
+    n_ptc = len(quat_array)
+    objs = np.zeros(n_ptc, dtype=float)
+    geodesics = np.zeros((n_ptc,n_ptc), dtype=float)
+    normalization = np.sum(weights)
     for i, q0 in enumerate(quat_array): 
-        for j,qn in enumerate(quat_array):
-            q_sym = symmetrize_wrt_ref(qn, q0, sym_group, euclid) 
-            objs[i] += weights[j]*quat_geodesic(q_sym, q0, euclid)**2
-        objs[i] /= np.sum(weights)
+        for j in range(i+1,len(quat_array)):
+            q_sym = symmetrize_wrt_ref(quat_array[j], q0, sym_group, euclid) 
+            geodesics[i,j] = quat_geodesic(q_sym, q0, euclid)
+            geodesics[j,i] = geodesics[i,j]
+            objs[i] += weights[j]*geodesics[i,j]**2
+        for j in range(0, i): objs[i] += weights[j]*geodesics[i,j]**2
+            
+        objs[i] /= normalization
     id_min = np.argmin(objs)
     
     return quat_array[id_min], objs[id_min]

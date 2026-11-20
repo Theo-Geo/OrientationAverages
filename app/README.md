@@ -1,10 +1,5 @@
 # Average for Crystal Orientation
 
-## Requirements 
-
-## Example usage
-
-
 # Theoretical basis
 
 Any rotation in 3D can be represented by a 3x3 orthogonal matrix that preserves orientation, formally the group $SO(3)$. For a crystal with certain symmetries there are operations that leave the crystal orientation invariant. For example, a 180° rotation around $z$ is defined by the matrix $\mathbf{P}_z = \mathrm{diag}(-1,-1,1)$, and would leave a crystal with monoclinic symmetry around $z$ invariant. Following ([Man, 2022](https://doi.org/10.1007/s10659-022-09882-8) Chapter 6), one can define the set of all symmetry operations as,

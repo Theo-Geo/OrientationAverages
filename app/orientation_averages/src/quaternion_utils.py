@@ -83,20 +83,20 @@ def quaternions_to_rotation_matrix(quat):
     
     return rotation_matrix;
 
-@njit
+#@njit
 def axis_angle_to_quaternion(axis, angle):
     quat = np.empty(4, dtype=float)
     quat[0] = np.cos(angle/2)
-    axis /= np.sqrt(np.sum(axis**2))
+    axis = axis/np.sqrt(np.sum(axis**2))
     quat[1:] = np.sin(angle/2)*axis    
     return quat
 
-@njit
+#@njit
 def quaternion_to_axis_angle(quat):
     angle = 2*np.arccos(quat[0])
     if angle > 1e-12:
         axis = quat[1:]/np.sin(angle/2)
-        axis /= np.sqrt(np.sum(axis**2))
+        axis = axis/np.sqrt(np.sum(axis**2))
     else: 
         angle = 0.0
         axis = quat[1:]/np.sqrt(np.sum(quat[1:]**2))

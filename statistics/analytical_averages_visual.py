@@ -30,8 +30,8 @@ def _symmetric_circular_mean(angle1, angle2, w1, w2, reflect=False):
     if reflect: 
         product = min(1, max(-1,vec1@vec2)) # avoid floating point errors
         if np.arccos(product) > np.pi/2: vec2 *= -1
-    mean_vec = 0.5*(w1*vec1 + w2*vec2)
-    return np.arctan2(mean_vec[1], mean_vec[2])
+    mean_vec = w1*vec1 + w2*vec2
+    return np.arctan2(mean_vec[1], mean_vec[0])
     
 # test data: two rotations around the x-axis by an angle phi
 
@@ -43,17 +43,18 @@ def test_circular_average():
     quat1 = axis_angle_to_quaternion(rot_axis, phi1)
     quat2 = axis_angle_to_quaternion(rot_axis, phi2) 
 
-    for weights in [np.ones(2), np.array([1/3,2/3])]:
-        true_mean = _symmetric_circular_mean(phi1, phi2, weights)
+    for weights in [np.ones(2), np.array([4/5,1/5])]:
+        true_mean = _symmetric_circular_mean(phi1, phi2, *weights)
         mean_quat = symmetry_average(np.array([quat1,quat2]), weights, 
                                           sym_group="triclinic")
         mean_quat_markley = markley_average(np.array([quat1,quat2]), weights)
         
-        axis, mean_angle = quaternion_to_axis_angle(mean_quat)    
-        axis, mean_angle_markley = quaternion_to_axis_angle(mean_quat_markley) 
+        mean_axis, mean_angle = quaternion_to_axis_angle(mean_quat)    
+        mean_axis, mean_angle_markley = quaternion_to_axis_angle(mean_quat_markley) 
+        
         
         if all(weights==1): assert np.abs(mean_angle) < 1e-12
-        assert np.abs(mean_angle - true_mean) < 1e-12
+        assert np.abs(mean_angle - true_mean) < 1e-12, f"{mean_angle},{true_mean}"
         assert np.abs(mean_angle - mean_angle_markley) < 1e-12
         
 def test_symmetry_average():
@@ -64,16 +65,19 @@ def test_symmetry_average():
     quat1 = axis_angle_to_quaternion(rot_axis, phi1)
     quat2 = axis_angle_to_quaternion(rot_axis, phi2) 
 
-    for weights in [np.ones(2), np.array([1/3,2/3])]:
-        true_mean = _symmetric_circular_mean(phi1, phi2, weights, reflect=True)
+    for weights in [np.ones(2), np.array([4/5,1/5])]:
+        true_mean = _symmetric_circular_mean(phi1, phi2, *weights, reflect=True)
         mean_quat = symmetry_average(np.array([quat1,quat2]), weights, 
                                           sym_group="orthorhombic")
+        print(mean_quat, quat1, quat2)
+
         axis, mean_angle = quaternion_to_axis_angle(mean_quat)    
         
         if all(weights==1): assert np.abs(mean_angle) < 1e-12
-        assert np.abs(mean_angle - true_mean) < 1e-12
+        assert np.abs(mean_angle - true_mean) < 1e-12, f"{mean_angle},{true_mean}"
         
-    
+test_circular_average()
+test_symmetry_average()
     
 
     

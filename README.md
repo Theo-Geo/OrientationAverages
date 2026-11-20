@@ -12,10 +12,10 @@ The folder statistics contains tests for runtime and accuracy.
 ## TODOS
 
 - [x] runtime vs. accuracy analysis
-- [ ] improve effiency -> don't resymmetrize if not necessary 
-- [ ] write unit tests
-- [ ] check maximum geodesic for orthorhombic group 
-- [ ] use frobenius norm as metric instead of geodesic?  
+- [ ] improve effiency -> don't resymmetrize if not necessary ?
+- [x] write unit tests 
+- [ ] figure out how to run a tester 
+- [x] use frobenius norm as metric instead of geodesic?  
 
 ## Installation 
 
